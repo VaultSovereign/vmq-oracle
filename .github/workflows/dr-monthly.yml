@@ -3,13 +3,14 @@ on:
   schedule:
     - cron: '0 3 1 * *'  # monthly at 03:00 UTC
   workflow_dispatch: {}
+permissions:
+  contents: read
+  id-token: write
 
 jobs:
   dr-check:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
 
@@ -42,9 +43,7 @@ jobs:
           for i in {1..120}; do
             s=$(aws codepipeline get-pipeline-execution --name "$PIPELINE_NAME" --pipeline-execution-id "$EXEC_ID" --query 'pipelineExecution.status' --output text)
             echo "[$i] $s"
-            if [[ "$s" =~ ^(Succeeded|Failed|Stopped|Superseded)$ ]]; then
-              break
-            fi
+            [[ "$s" =~ ^(Succeeded|Failed|Stopped|Superseded)$ ]] && break
             sleep 10
           done
           [[ "$s" == "Succeeded" ]]

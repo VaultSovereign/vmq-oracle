@@ -3,13 +3,14 @@ on:
   schedule:
     - cron: '0 4 * * *'  # 04:00 UTC daily
   workflow_dispatch: {}
+permissions:
+  contents: read
+  id-token: write
 
 jobs:
   check:
     runs-on: ubuntu-latest
-    permissions:
-      id-token: write
-      contents: read
+    timeout-minutes: 15
     steps:
       - name: Configure AWS via OIDC
         uses: aws-actions/configure-aws-credentials@v4
