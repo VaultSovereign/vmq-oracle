@@ -1,5 +1,9 @@
 VaultMesh × Amazon Q Business Bundle (eu-west-1)
 
+[![Docs → S3 → Q Sync](https://github.com/VaultSovereign/vm-business-q/actions/workflows/qbusiness-sync.yml/badge.svg)](../../actions/workflows/qbusiness-sync.yml)
+[![DR Monthly Parity](https://github.com/VaultSovereign/vm-business-q/actions/workflows/dr-monthly.yml/badge.svg)](../../actions/workflows/dr-monthly.yml)
+![Tag](https://img.shields.io/github/v/tag/VaultSovereign/vm-business-q?label=release)
+
 What this provides
 - Application → Index → Retriever → Data sources → Guardrails → Web experience
 - IAM admin policy and datasource role (trusts qbusiness.amazonaws.com)
@@ -26,4 +30,19 @@ Key paths
 Notes
 - Keep datasource connector JSONs aligned with AWS docs before production.
 - All scripts default to eu-west-1; override with `REGION`.
+
+## Service SLOs & Observability
+
+- **Sync availability SLO:** 99.5% monthly (SyncFailed alarms sustain at 0).
+- **Time-to-knowledge (TTK):** < 10 seconds p95 from query to answer in the Web Experience.
+- **Alarms:** “NoSync > 24h” and “SyncFailed > 0” route to `#ops-escalations` on-call rotation.
+- **Dashboard:** CloudWatch “VaultMesh Sovereign” view shows SyncFailed, NoSync, CodePipeline health, and prefix metrics for `root/` vs `_staging/`. Deploy updates with `make dashboard-deploy`.
+
+## Ops Snapshot
+
+- **CloudWatch dashboard:** [`VaultMesh-Sovereign`](https://console.aws.amazon.com/cloudwatch/home?region=eu-west-1#dashboards:name=VaultMesh-Sovereign)
+- **DR monthly workflow:** [`dr-monthly.yml`](../../actions/workflows/dr-monthly.yml)
+- **No-sync daily workflow:** [`no-sync-daily.yml`](../../actions/workflows/no-sync-daily.yml)
+- **Guardrails JSON:** [`02-qbusiness/guardrails/vaultmesh-guardrails.json`](02-qbusiness/guardrails/vaultmesh-guardrails.json)
+- **Knowledge bucket:** `s3://vaultmesh-knowledge-base`
 
