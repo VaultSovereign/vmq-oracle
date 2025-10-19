@@ -1,0 +1,60 @@
+name: Guardrail Lint
+on:
+  pull_request:
+    paths:
+      - "02-qbusiness/guardrails/**"
+  push:
+    branches: ["master", "main"]
+    paths:
+      - "02-qbusiness/guardrails/**"
+  workflow_dispatch: {}
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate JSON schema
+        run: |
+          set -e
+          echo "🔍 Validating guardrail JSON files..."
+
+          FOUND=0
+          for f in 02-qbusiness/guardrails/*.json; do
+            if [ -f "$f" ]; then
+              echo "  Checking $f..."
+              jq empty "$f" || { echo "❌ Invalid JSON: $f"; exit 1; }
+              FOUND=1
+            fi
+          done
+
+          if [ "$FOUND" -eq 0 ]; then
+            echo "⚠️  No JSON files found in 02-qbusiness/guardrails/"
+            exit 1
+          fi
+
+          echo "✅ All guardrail files are valid JSON"
+
+      - name: Validate required fields
+        run: |
+          set -e
+          echo "🔍 Checking for required guardrail fields..."
+
+          for f in 02-qbusiness/guardrails/*.json; do
+            if [ -f "$f" ]; then
+              echo "  Validating structure of $f..."
+
+              # Check for at least one of: blockedPhrases or topicConfigurations
+              HAS_BLOCKED=$(jq 'has("blockedPhrases")' "$f")
+              HAS_TOPICS=$(jq 'has("topicConfigurations")' "$f")
+
+              if [ "$HAS_BLOCKED" = "false" ] && [ "$HAS_TOPICS" = "false" ]; then
+                echo "❌ $f must contain 'blockedPhrases' or 'topicConfigurations'"
+                exit 1
+              fi
+            fi
+          done
+
+          echo "✅ All guardrail files have required fields"
