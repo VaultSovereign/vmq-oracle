@@ -1,8 +1,8 @@
 VaultMesh × Amazon Q Business Bundle (eu-west-1)
 
-[![Docs → S3 → Q Sync](https://github.com/VaultSovereign/vm-business-q/actions/workflows/qbusiness-sync.yml/badge.svg)](../../actions/workflows/qbusiness-sync.yml)
-[![DR Monthly Parity](https://github.com/VaultSovereign/vm-business-q/actions/workflows/dr-monthly.yml/badge.svg)](../../actions/workflows/dr-monthly.yml)
-![Tag](https://img.shields.io/github/v/tag/VaultSovereign/vm-business-q?label=release)
+[![Docs → S3 → Q Sync](https://github.com/VaultSovereign/vmq-oracle/actions/workflows/qbusiness-sync.yml/badge.svg)](../../actions/workflows/qbusiness-sync.yml)
+[![DR Monthly Parity](https://github.com/VaultSovereign/vmq-oracle/actions/workflows/dr-monthly.yml/badge.svg)](../../actions/workflows/dr-monthly.yml)
+![Tag](https://img.shields.io/github/v/tag/VaultSovereign/vmq-oracle?label=release)
 
 > 🟩 **RUBEDO SSO CUTOVER COMPLETE** — October 19, 2025  
 > **Status:** PRODUCTION GREEN  
