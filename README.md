@@ -4,6 +4,14 @@ VaultMesh × Amazon Q Business Bundle (eu-west-1)
 [![DR Monthly Parity](https://github.com/VaultSovereign/vm-business-q/actions/workflows/dr-monthly.yml/badge.svg)](../../actions/workflows/dr-monthly.yml)
 ![Tag](https://img.shields.io/github/v/tag/VaultSovereign/vm-business-q?label=release)
 
+> 🟩 **RUBEDO SSO CUTOVER COMPLETE** — October 19, 2025  
+> **Status:** PRODUCTION GREEN  
+> **Identity:** AWS IAM Identity Center (SSO)  
+> **Web Experience:** https://zerkno58.chat.qbusiness.eu-west-1.on.aws/  
+> 
+> → See [`RUBEDO-CUTOVER-CARD.md`](RUBEDO-CUTOVER-CARD.md) for operator runbook  
+> → Pin [`SLACK-PIN-RUBEDO-CUTOVER.md`](SLACK-PIN-RUBEDO-CUTOVER.md) in #vaultmesh-ops
+
 What this provides
 - Application → Index → Retriever → Data sources → Guardrails → Web experience
 - IAM admin policy and datasource role (trusts qbusiness.amazonaws.com)
