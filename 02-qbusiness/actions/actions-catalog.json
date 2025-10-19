@@ -1,0 +1,177 @@
+{
+  "version": "1.0.0-rubedo",
+  "catalog": [
+    {
+      "id": "summarize-docs",
+      "name": "Summarize documents",
+      "description": "Generate a security-reviewed Markdown executive summary for one or more indexed documents.",
+      "lambda": "arn:aws:lambda:${AWS_REGION}:${AWS_ACCOUNT_ID}:function:vmq-summarize-docs",
+      "policy": "vaultmesh.actions.summarize_docs",
+      "safetyTier": "GREEN",
+      "inputs": {
+        "documentUris": "Array of S3 URIs or knowledge base document identifiers to summarize.",
+        "audience": "Optional audience tag (engineering, delivery, compliance) to tailor tone."
+      },
+      "outputs": {
+        "summaryMarkdown": "Markdown-formatted overview with highlights, risks, and next steps."
+      },
+      "invocation": {
+        "mode": "chat.suggestedAction",
+        "handoffText": "Summarize these docs"
+      },
+      "audit": {
+        "logGroup": "/aws/lambda/vmq-summarize-docs",
+        "fields": [
+          "request_id",
+          "document_uris",
+          "persona",
+          "duration_ms"
+        ]
+      }
+    },
+    {
+      "id": "generate-faq",
+      "name": "Generate FAQ from folder",
+      "description": "Produce a Markdown FAQ draft derived from all documents under a folder or prefix.",
+      "lambda": "arn:aws:lambda:${AWS_REGION}:${AWS_ACCOUNT_ID}:function:vmq-generate-faq",
+      "policy": "vaultmesh.actions.generate_faq",
+      "safetyTier": "GREEN",
+      "inputs": {
+        "folderPrefix": "S3 prefix or connector folder identifier containing curated documents.",
+        "maxQuestions": "Optional cap on generated question/answer pairs (default 12)."
+      },
+      "outputs": {
+        "faqMarkdown": "Bullet-first FAQ draft with source citations preserved."
+      },
+      "invocation": {
+        "mode": "chat.button",
+        "handoffText": "Draft FAQ"
+      },
+      "audit": {
+        "logGroup": "/aws/lambda/vmq-generate-faq",
+        "fields": [
+          "request_id",
+          "folder_prefix",
+          "question_count",
+          "persona"
+        ]
+      }
+    },
+    {
+      "id": "draft-change-note",
+      "name": "Draft change note from diff",
+      "description": "Compare two documents and output a Markdown change note capturing deltas and impacts.",
+      "lambda": "arn:aws:lambda:${AWS_REGION}:${AWS_ACCOUNT_ID}:function:vmq-draft-change-note",
+      "policy": "vaultmesh.actions.draft_change_note",
+      "safetyTier": "GREEN",
+      "inputs": {
+        "baselineUri": "Original document URI.",
+        "updatedUri": "Updated document URI to diff against baseline.",
+        "changeWindow": "Optional change window or release tag."
+      },
+      "outputs": {
+        "changeMarkdown": "Change log draft including highlights, impacts, and reviewers."
+      },
+      "invocation": {
+        "mode": "chat.link",
+        "handoffText": "Draft change note"
+      },
+      "audit": {
+        "logGroup": "/aws/lambda/vmq-draft-change-note",
+        "fields": [
+          "request_id",
+          "baseline_uri",
+          "updated_uri",
+          "diff_bytes"
+        ]
+      }
+    },
+    {
+      "id": "validate-schema",
+      "name": "Validate schema",
+      "description": "Run DTDL and NGSI-LD validators and return a consolidated lint report.",
+      "lambda": "arn:aws:lambda:${AWS_REGION}:${AWS_ACCOUNT_ID}:function:vmq-validate-schema",
+      "policy": "vaultmesh.actions.validate_schema",
+      "safetyTier": "GREEN",
+      "inputs": {
+        "schemaUri": "S3 URI or repository path to the schema definition to validate.",
+        "profile": "Validation profile: dtdl, ngsi-ld, or both (default both)."
+      },
+      "outputs": {
+        "validationReport": "Structured JSON and Markdown summary of validation findings."
+      },
+      "invocation": {
+        "mode": "chat.suggestedAction",
+        "handoffText": "Validate schema"
+      },
+      "audit": {
+        "logGroup": "/aws/lambda/vmq-validate-schema",
+        "fields": [
+          "request_id",
+          "schema_uri",
+          "profile",
+          "issues_found"
+        ]
+      }
+    },
+    {
+      "id": "create-jira-draft",
+      "name": "Create Jira draft",
+      "description": "Stage a Jira issue payload without writing to Jira; returns a signed draft for review.",
+      "lambda": "arn:aws:lambda:${AWS_REGION}:${AWS_ACCOUNT_ID}:function:vmq-create-jira-draft",
+      "policy": "vaultmesh.actions.create_jira_draft",
+      "safetyTier": "GREEN",
+      "inputs": {
+        "projectKey": "Jira project key to target.",
+        "summary": "Draft issue summary.",
+        "description": "Issue body, typically derived from conversation context.",
+        "labels": "Optional array of Jira labels."
+      },
+      "outputs": {
+        "jiraPayload": "Dry-run Jira issue payload plus approver instructions."
+      },
+      "invocation": {
+        "mode": "chat.button",
+        "handoffText": "Draft Jira ticket"
+      },
+      "audit": {
+        "logGroup": "/aws/lambda/vmq-create-jira-draft",
+        "fields": [
+          "request_id",
+          "project_key",
+          "persona",
+          "approver_required"
+        ]
+      }
+    },
+    {
+      "id": "compliance-pack",
+      "name": "Generate compliance pack",
+      "description": "Collect referenced documents and emit a compliance cover sheet with traceable sources.",
+      "lambda": "arn:aws:lambda:${AWS_REGION}:${AWS_ACCOUNT_ID}:function:vmq-generate-compliance-pack",
+      "policy": "vaultmesh.actions.generate_compliance_pack",
+      "safetyTier": "GREEN",
+      "inputs": {
+        "sourceUris": "Array of document URIs or connector references to include.",
+        "regime": "Optional compliance regime tag (ISO27k, SOC2, AI-Act)."
+      },
+      "outputs": {
+        "packageUri": "S3 URI to the generated ZIP bundle.",
+        "coverMarkdown": "Markdown cover sheet summarizing contents and controls."
+      },
+      "invocation": {
+        "mode": "chat.link",
+        "handoffText": "Assemble compliance pack"
+      },
+      "audit": {
+        "logGroup": "/aws/lambda/vmq-generate-compliance-pack",
+        "fields": [
+          "request_id",
+          "source_count",
+          "regime",
+          "package_uri"
+        ]
+      }
+    }
+  ]
+}

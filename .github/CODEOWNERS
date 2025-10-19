@@ -1,0 +1,10 @@
+# Sovereign Rubedo governance: require review for knowledge and guardrail assets
+
+# Documentation and governance artefacts
+/docs/**                                @VaultSovereign/sovereign-ops
+/RUNBOOK-DR.md                          @VaultSovereign/sovereign-ops
+/RUNBOOK-IR.md                          @VaultSovereign/sovereign-ops
+/02-qbusiness/guardrails/**             @VaultSovereign/sovereign-ops
+/02-qbusiness/datasources/**            @VaultSovereign/sovereign-ops
+/docs/CONNECTORS.md                      @VaultSovereign/sovereign-ops
+/docs/CONTENT-POLICY.md                  @VaultSovereign/sovereign-ops
