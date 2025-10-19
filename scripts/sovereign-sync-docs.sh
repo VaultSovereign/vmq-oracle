@@ -7,7 +7,9 @@ set -euo pipefail
 # Config
 DOCS_PATH="${1:-.}"
 WAIT_POLL="${2:-true}"
-VMQ="${HOME}/work/vm-business-q"
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || printf '')"
+VMQ="${VMQ:-${REPO_ROOT:-$HOME/work/vmq-oracle}}"
+# Resolve checkout dynamically; fall back to canonical workstation path
 TMP_EXPORT="/tmp/q-business-export"
 
 # Color codes

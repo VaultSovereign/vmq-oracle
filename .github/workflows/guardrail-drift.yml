@@ -1,0 +1,116 @@
+name: Guardrail Drift
+on:
+  schedule:
+    - cron: '15 * * * *'  # hourly
+  workflow_dispatch: {}
+permissions:
+  contents: read
+  id-token: write
+concurrency:
+  group: guardrail-drift
+  cancel-in-progress: true
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_QB_OIDC_ROLE_ARN }}
+          aws-region: eu-west-1
+
+      - name: Detect guardrail drift
+        env:
+          REGION: eu-west-1
+          APP_ID: ${{ secrets.QB_APP_ID }}
+          AUDIT_BUCKET: ${{ secrets.QB_EXPORT_BUCKET }}
+        run: |
+          set -euo pipefail
+          aws qbusiness get-chat-controls-configuration \
+            --region "$REGION" --application-id "$APP_ID" \
+            > remote.json
+          jq -S '
+            def canon:
+              (if has("blockedPhrases") and .blockedPhrases.blockedPhrases then
+                 .blockedPhrases.blockedPhrases |= sort
+               else . end)
+              | (if has("topicConfigurations") then
+                   .topicConfigurations |= (
+                     sort_by(.name)
+                     | map(
+                         if has("rules") and (.rules|type=="array") then
+                           .rules |= sort_by(.ruleType)
+                         else . end
+                       )
+                   )
+                 else . end)
+              | del(.lastUpdatedTime?, .lastUpdatedBy?, .createdTime?, .createdBy?, .updatedTime?, .version?, .revision?);
+            canon
+          ' remote.json > remote.sorted.json
+          SRC="02-qbusiness/guardrails/topic-controls.json"
+          if [ ! -f "$SRC" ] && [ -f "02-qbusiness/guardrails/vaultmesh-guardrails.json" ]; then
+            SRC="02-qbusiness/guardrails/vaultmesh-guardrails.json"
+          fi
+          if [ ! -f "$SRC" ]; then
+            echo "Guardrail source not found at $SRC" >&2
+            exit 1
+          fi
+          jq -S '
+            def canon:
+              (if has("blockedPhrases") and .blockedPhrases.blockedPhrases then
+                 .blockedPhrases.blockedPhrases |= sort
+               else . end)
+              | (if has("topicConfigurations") then
+                   .topicConfigurations |= (
+                     sort_by(.name)
+                     | map(
+                         if has("rules") and (.rules|type=="array") then
+                           .rules |= sort_by(.ruleType)
+                         else . end
+                       )
+                   )
+                 else . end)
+              | del(.lastUpdatedTime?, .lastUpdatedBy?, .createdTime?, .createdBy?, .updatedTime?, .version?, .revision?);
+            canon
+          ' "$SRC" > local.sorted.json
+          LOCAL_SHA=$(sha256sum local.sorted.json | awk '{print $1}')
+          REMOTE_SHA=$(sha256sum remote.sorted.json | awk '{print $1}')
+          echo "LOCAL_SHA=$LOCAL_SHA" >> "$GITHUB_ENV"
+          echo "REMOTE_SHA=$REMOTE_SHA" >> "$GITHUB_ENV"
+          diff -u local.sorted.json remote.sorted.json > drift.patch || true
+          if [ "$LOCAL_SHA" != "$REMOTE_SHA" ]; then
+            ts=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+            echo "GUARDRAIL_DRIFT=true" >> "$GITHUB_ENV"
+            echo "GUARDRAIL_DRIFT_TS=$ts" >> "$GITHUB_ENV"
+            printf '{"ts":"%s","drift":"guardrail","app_id":"%s","local_sha":"%s","remote_sha":"%s"}\n' \
+              "$ts" "$APP_ID" "$LOCAL_SHA" "$REMOTE_SHA" > guardrail-drift-metadata.json
+            aws s3 cp guardrail-drift-metadata.json \
+              "s3://${AUDIT_BUCKET}/audit/drift/guardrail-drift-${ts}.json"
+            aws s3 cp local.sorted.json  "s3://${AUDIT_BUCKET}/audit/drift/guardrail-local-${ts}.json"
+            aws s3 cp remote.sorted.json "s3://${AUDIT_BUCKET}/audit/drift/guardrail-remote-${ts}.json"
+            aws s3 cp drift.patch        "s3://${AUDIT_BUCKET}/audit/drift/guardrail-diff-${ts}.patch"
+            echo "❌ Guardrail drift detected"
+          else
+            echo "GUARDRAIL_DRIFT=false" >> "$GITHUB_ENV"
+            rm -f drift.patch
+            echo "✅ No guardrail drift"
+          fi
+      - name: Upload guardrail drift artifacts
+        if: env.GUARDRAIL_DRIFT == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: guardrail-drift-${{ env.GUARDRAIL_DRIFT_TS }}
+          path: |
+            guardrail-drift-metadata.json
+            local.sorted.json
+            remote.sorted.json
+            drift.patch
+      - name: Fail when guardrail drift detected
+        if: env.GUARDRAIL_DRIFT == 'true'
+        run: |
+          echo "Guardrail drift detected. Local SHA=${LOCAL_SHA}, Remote SHA=${REMOTE_SHA}" >&2
+          exit 1
