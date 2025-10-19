@@ -1,0 +1,62 @@
+{
+  "summarize": {
+    "action": "summarize-docs",
+    "user": {"id": "alice@vaultmesh.io", "group": "VaultMesh-Engineering"},
+    "context": {"request_id": "r-1", "persona": "engineer"},
+    "params": {
+      "documentUris": ["s3://vaultmesh-knowledge-base/polis-overview.md"],
+      "audience": "delivery"
+    }
+  },
+  "faq": {
+    "action": "generate-faq",
+    "user": {"id": "bob@vaultmesh.io", "group": "VaultMesh-Delivery"},
+    "context": {"request_id": "r-2", "persona": "delivery-manager"},
+    "params": {
+      "folderPrefix": "s3://vaultmesh-knowledge-base/docs/",
+      "maxQuestions": 8
+    }
+  },
+  "change-note": {
+    "action": "draft-change-note",
+    "user": {"id": "eve@vaultmesh.io", "group": "VaultMesh-Management"},
+    "context": {"request_id": "r-3", "persona": "delivery-manager"},
+    "params": {
+      "baselineUri": "s3://.../doc-v1.md",
+      "updatedUri": "s3://.../doc-v2.md",
+      "changeWindow": "2025-10"
+    }
+  },
+  "validate": {
+    "action": "validate-schema",
+    "user": {"id": "carol@vaultmesh.io", "group": "VaultMesh-Engineering"},
+    "context": {"request_id": "r-4", "persona": "engineer"},
+    "params": {
+      "schemaUri": "s3://.../schema.json",
+      "profile": "both"
+    }
+  },
+  "jira": {
+    "action": "create-jira-draft",
+    "user": {"id": "dana@vaultmesh.io", "group": "VaultMesh-Delivery"},
+    "context": {"request_id": "r-5", "persona": "delivery-manager"},
+    "params": {
+      "projectKey": "VM",
+      "summary": "Stub ticket",
+      "description": "Draft body",
+      "labels": ["qbusiness", "stub"]
+    }
+  },
+  "compliance": {
+    "action": "compliance-pack",
+    "user": {"id": "sam@vaultmesh.io", "group": "VaultMesh-Compliance"},
+    "context": {"request_id": "r-6", "persona": "compliance"},
+    "params": {
+      "sourceUris": [
+        "s3://.../ai-act-cheatsheet.md",
+        "s3://.../RUNBOOK-DR.md"
+      ],
+      "regime": "AI-Act"
+    }
+  }
+}

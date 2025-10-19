@@ -85,7 +85,7 @@ HAS_ATTACH=$(aws iam list-attached-role-policies --role-name "$DATASOURCE_ROLE_N
   --query "AttachedPolicies[?PolicyArn=='${DATASOURCE_POLICY_ARN}'] | length(@)" --output text)
 if [[ "$HAS_ATTACH" == "0" ]]; then
   echo "Attaching policy to role: ${DATASOURCE_POLICY_NAME} -> ${DATASOURCE_ROLE_NAME}"
-  aws iam attach-role-policy --role-name "$DATASOURCE_ROLE_NAME" --policy-arn "$DATASOURCE_POLICY_ARN" >/dev/null
+  aws iam attach-role-policy --role-name "$DATASOURCE_ROLE_NAME" --policy-arn "${DATASOURCE_POLICY_ARN}" 2>/dev/null || true
 else
   echo "Policy already attached to role."
 fi

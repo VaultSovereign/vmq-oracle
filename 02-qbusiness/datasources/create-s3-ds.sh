@@ -8,7 +8,7 @@ INDEX_ID="${2:-${INDEX_ID:-}}"
 : "${INDEX_ID:?Set INDEX_ID env var or pass as arg 2}"
 
 REGION="${REGION:-eu-west-1}"
-DS_NAME="${DS_NAME:-VaultMesh S3 KB}"
+DS_NAME="${DS_NAME:-VaultMesh-S3-KB}"
 ACCOUNT_ID=$(aws sts get-caller-identity --query 'Account' --output text)
 ROLE_ARN="${ROLE_ARN:-}"
 

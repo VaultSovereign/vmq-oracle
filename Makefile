@@ -222,3 +222,16 @@ s3-lifecycle-90d:
 	   --bucket "$$BUCKET_NAME" \
 	   --lifecycle-configuration file://02-qbusiness/security/s3-lifecycle-90d.json; \
 	 echo "✅ Applied 90-day lifecycle to $$BUCKET_NAME for ci/, _staging/dr/, audit/promotions/"
+
+lambdas-build:
+	@cd 03-lambdas && sam build
+
+lambdas-deploy:
+	@cd 03-lambdas && sam deploy --stack-name vmq-actions --capabilities CAPABILITY_IAM --resolve-s3
+
+lambdas-test:
+	@[ -f .env ] && set -a && . ./.env && set +a; \
+	 aws lambda invoke --function-name vmq-summarize-docs \
+	   --payload file://03-lambdas/test-events.json \
+	   --cli-binary-format raw-in-base64-out /tmp/lambda-response.json; \
+	 cat /tmp/lambda-response.json | jq '.'

@@ -1,0 +1,16 @@
+[
+    {
+        "executionId": "01e640bb-5011-4439-9899-b25d01c45e4c",
+        "startTime": "2025-10-19T04:35:40.233000+01:00",
+        "endTime": "2025-10-19T04:40:15.387000+01:00",
+        "status": "SUCCEEDED",
+        "error": {},
+        "metrics": {
+            "documentsAdded": "7",
+            "documentsModified": "0",
+            "documentsDeleted": "0",
+            "documentsFailed": "0",
+            "documentsScanned": "7"
+        }
+    }
+]

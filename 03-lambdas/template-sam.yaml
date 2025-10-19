@@ -1,0 +1,145 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: VMQ • Six green-tier action Lambdas (stub), Python 3.12
+
+Globals:
+  Function:
+    Runtime: python3.12
+    Timeout: 10
+    MemorySize: 256
+    Tracing: Active
+    Environment:
+      Variables:
+        LOG_LEVEL: INFO
+        EXPORT_BUCKET: !Ref ExportBucket
+    Layers: []
+    Policies:
+      - Version: '2012-10-17'
+        Statement:
+          - Sid: ReadPersonasAndCatalog
+            Effect: Allow
+            Action:
+              - s3:GetObject
+            Resource:
+              - !Sub 'arn:aws:s3:::${ExportBucket}/personas/*'
+              - !Sub 'arn:aws:s3:::${ExportBucket}/actions/*'
+          - Sid: PublishActionMetrics
+            Effect: Allow
+            Action:
+              - cloudwatch:PutMetricData
+            Resource: '*'
+            Condition:
+              StringEquals:
+                'cloudwatch:namespace': 'VaultMesh/QBusinessActions'
+
+Parameters:
+  ExportBucket:
+    Type: String
+    Default: vaultmesh-knowledge-base
+  OpaUrl:
+    Type: String
+    Default: ""
+    Description: Optional http(s)://host:port/v1/data/vaultmesh/actions (leave blank to use static policy)
+
+Resources:
+  CommonLayer:
+    Type: AWS::Serverless::LayerVersion
+    Properties:
+      LayerName: vmq-common
+      ContentUri: common
+      CompatibleRuntimes: [python3.12]
+
+  FnSummarize:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: vmq-summarize-docs
+      CodeUri: vmq-summarize-docs
+      Handler: handler.handler
+      Environment: { Variables: { OPA_URL: !Ref OpaUrl } }
+      Layers: [ !Ref CommonLayer ]
+      Events: {}
+
+  FnFaq:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: vmq-generate-faq
+      CodeUri: vmq-generate-faq
+      Handler: handler.handler
+      Environment: { Variables: { OPA_URL: !Ref OpaUrl } }
+      Layers: [ !Ref CommonLayer ]
+
+  FnChangeNote:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: vmq-draft-change-note
+      CodeUri: vmq-draft-change-note
+      Handler: handler.handler
+      Environment: { Variables: { OPA_URL: !Ref OpaUrl } }
+      Layers: [ !Ref CommonLayer ]
+
+  FnValidateSchema:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: vmq-validate-schema
+      CodeUri: vmq-validate-schema
+      Handler: handler.handler
+      Environment: { Variables: { OPA_URL: !Ref OpaUrl } }
+      Layers: [ !Ref CommonLayer ]
+
+  FnJiraDraft:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: vmq-create-jira-draft
+      CodeUri: vmq-create-jira-draft
+      Handler: handler.handler
+      Environment: { Variables: { OPA_URL: !Ref OpaUrl } }
+      Layers: [ !Ref CommonLayer ]
+
+  FnCompliancePack:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: vmq-generate-compliance-pack
+      CodeUri: vmq-generate-compliance-pack
+      Handler: handler.handler
+      Environment: { Variables: { OPA_URL: !Ref OpaUrl } }
+      Layers: [ !Ref CommonLayer ]
+
+  # Log retention (14 days for dev/prod balance)
+  LogGroupSummarize:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/vmq-summarize-docs
+      RetentionInDays: 14
+  LogGroupFaq:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/vmq-generate-faq
+      RetentionInDays: 14
+  LogGroupChangeNote:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/vmq-draft-change-note
+      RetentionInDays: 14
+  LogGroupValidateSchema:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/vmq-validate-schema
+      RetentionInDays: 14
+  LogGroupJiraDraft:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/vmq-create-jira-draft
+      RetentionInDays: 14
+  LogGroupCompliancePack:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: /aws/lambda/vmq-generate-compliance-pack
+      RetentionInDays: 14
+
+Outputs:
+  SummarizeName:     { Value: !Ref FnSummarize }
+  FaqName:           { Value: !Ref FnFaq }
+  ChangeNoteName:    { Value: !Ref FnChangeNote }
+  ValidateSchemaName:{ Value: !Ref FnValidateSchema }
+  JiraDraftName:     { Value: !Ref FnJiraDraft }
+  CompliancePackName:{ Value: !Ref FnCompliancePack }

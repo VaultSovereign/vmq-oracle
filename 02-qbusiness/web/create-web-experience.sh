@@ -8,13 +8,13 @@ if [[ -z "$APP_ID" ]]; then
 fi
 
 REGION="${REGION:-eu-west-1}"
-TITLE="${TITLE:-VaultMesh Q Assistant}"
+TITLE="${TITLE:-VaultMesh-Q-Assistant}"
+ROLE_ARN="${ROLE_ARN:-}"
 
-WEB_ID=$(aws qbusiness create-web-experience \
-  --region "$REGION" \
-  --application-id "$APP_ID" \
-  --title "$TITLE" \
-  --query 'webExperienceId' --output text)
+ARGS=(--region "$REGION" --application-id "$APP_ID" --title "$TITLE")
+[[ -n "$ROLE_ARN" ]] && ARGS+=(--role-arn "$ROLE_ARN")
+
+WEB_ID=$(aws qbusiness create-web-experience "${ARGS[@]}" --query 'webExperienceId' --output text)
 
 echo "WEB_EXPERIENCE_ID=$WEB_ID"
 

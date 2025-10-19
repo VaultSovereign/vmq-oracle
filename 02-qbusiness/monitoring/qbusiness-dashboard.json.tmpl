@@ -231,6 +231,68 @@
         "period": 300,
         "yAxis": {"left": {"min": 0}}
       }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 27,
+      "width": 8,
+      "height": 6,
+      "properties": {
+        "region": "__REGION__",
+        "title": "RUBEDO Actions Invoked (24h)",
+        "view": "singleValue",
+        "metrics": [
+          ["VaultMesh/QBusinessActions", "ActionsInvoked", {"stat": "Sum", "label": "Total"}]
+        ],
+        "period": 86400
+      }
+    },
+    {
+      "type": "metric",
+      "x": 8,
+      "y": 27,
+      "width": 16,
+      "height": 6,
+      "properties": {
+        "region": "__REGION__",
+        "title": "Actions by Type (24h)",
+        "metrics": [
+          ["VaultMesh/QBusinessActions", "ActionsInvoked", "ActionId", "summarize-docs", {"stat": "Sum"}],
+          ["...", "generate-faq", {"stat": "Sum"}],
+          ["...", "draft-change-note", {"stat": "Sum"}],
+          ["...", "validate-schema", {"stat": "Sum"}],
+          ["...", "create-jira-draft", {"stat": "Sum"}],
+          ["...", "compliance-pack", {"stat": "Sum"}]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "period": 3600,
+        "yAxis": {"left": {"min": 0}}
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 33,
+      "width": 24,
+      "height": 6,
+      "properties": {
+        "region": "__REGION__",
+        "title": "Action Latency p95 (ms)",
+        "metrics": [
+          ["VaultMesh/QBusinessActions", "ActionLatency", "ActionId", "summarize-docs", {"stat": "p95"}],
+          ["...", "generate-faq", {"stat": "p95"}],
+          ["...", "draft-change-note", {"stat": "p95"}],
+          ["...", "validate-schema", {"stat": "p95"}],
+          ["...", "create-jira-draft", {"stat": "p95"}],
+          ["...", "compliance-pack", {"stat": "p95"}]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "period": 300,
+        "yAxis": {"left": {"min": 0}}
+      }
     }
   ]
 }

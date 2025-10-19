@@ -1,0 +1,28 @@
+{
+  "name": "vaultmesh-qbusiness-ui-integration",
+  "version": "1.0.0-rubedo",
+  "description": "VaultMesh Q Business UI Integration - RUBEDO Actions",
+  "private": true,
+  "dependencies": {
+    "@aws-sdk/client-s3": "^3.600.0",
+    "@aws-sdk/client-lambda": "^3.600.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0"
+  },
+  "scripts": {
+    "test-catalog": "node scripts/test-catalog.js",
+    "test-invoke": "node scripts/test-invoke.js",
+    "validate": "node scripts/validate-integration.js"
+  },
+  "keywords": [
+    "vaultmesh",
+    "qbusiness",
+    "rubedo",
+    "actions",
+    "personas"
+  ],
+  "author": "VaultMesh Engineering",
+  "license": "PROPRIETARY"
+}
