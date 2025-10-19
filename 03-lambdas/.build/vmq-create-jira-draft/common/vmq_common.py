@@ -49,11 +49,19 @@ def authorize_action(evt):
             LOG.warning("OPA unreachable, falling back to static green map: %s", e)
 
     action = evt.get("action")
-    group  = (evt.get("user") or {}).get("group")
+    user = evt.get("user") or {}
+    # Support both single group and groups array
+    user_groups = user.get("groups", [])
+    if not user_groups and user.get("group"):
+        user_groups = [user.get("group")]
+
     g = _GREEN.get(action)
-    if g and group in g["groups"]:
-        return True, False, ""
-    return False, False, f"action {action} is not enabled for group {group}"
+    if g:
+        # Check if any user group is in the allowed set
+        if any(ug in g["groups"] for ug in user_groups):
+            return True, False, ""
+
+    return False, False, f"action {action} is not enabled for groups {user_groups}"
 
 def ok(body: dict, evt: dict) -> dict:
     rid = ((evt.get("context") or {}).get("request_id")) or str(int(time.time()*1000))

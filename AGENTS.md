@@ -1,9 +1,13 @@
-# Repository Guidelines
+# VaultMesh Q Business Agent Guidelines
+
+## Project Overview
+VaultMesh × Amazon Q Business Bundle provides intelligent knowledge management with sub-10 second query response times and 99.5% sync availability SLO. Transforms static documentation into searchable knowledge base with automated provisioning and operational monitoring.
 
 ## Project Structure & Module Organization
 - `01-foundation/` seeds IAM roles and policies (`iam/policies/*.json.tmpl`, `roles/create-roles.sh`) for eu-west-1 by default.
 - `02-qbusiness/` holds app, index, datasource scripts, guardrails (YAML→JSON), personas, pipeline, monitoring templates, and web helpers; generated IDs live in `.env`.
-- `03-lambdas/` contains Rubedo action Lambdas with shared `common/` utilities and `template-sam.yaml`; `03-observability/` and `04-migration/` capture ops notes and migration checklists.
+- `03-lambdas/` contains document processing Lambdas with shared `common/` utilities and `template-sam.yaml`; `03-observability/` and `04-migration/` capture ops notes and migration checklists.
+- Knowledge bucket: `s3://vaultmesh-knowledge-base` with automated sync workflows.
 
 ## Build, Test, and Development Commands
 - `make app`, `make index`, `make retriever`, `make roles`, `make s3`, `make sync` provision Q Business resources—execute in that order after populating `.env`.

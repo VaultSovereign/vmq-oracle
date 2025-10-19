@@ -1,0 +1,101 @@
+{
+  "queries": [
+    {
+      "name": "RUBEDO Actions per Day by Group",
+      "description": "Daily invocation count grouped by user group, useful for tracking adoption",
+      "logGroups": [
+        "/aws/lambda/vmq-summarize-docs",
+        "/aws/lambda/vmq-generate-faq",
+        "/aws/lambda/vmq-draft-change-note",
+        "/aws/lambda/vmq-validate-schema",
+        "/aws/lambda/vmq-create-jira-draft",
+        "/aws/lambda/vmq-generate-compliance-pack"
+      ],
+      "query": "fields @timestamp, action, user.groups.0 as userGroup\n| filter event = \"action_ok\"\n| stats count() by bin(@timestamp, 1d), action, userGroup\n| sort @timestamp desc",
+      "timeRange": "7d"
+    },
+    {
+      "name": "RUBEDO Authorization Denials",
+      "description": "All 403 denials with deny reason and attempted group, critical for security audits",
+      "logGroups": [
+        "/aws/lambda/vmq-summarize-docs",
+        "/aws/lambda/vmq-generate-faq",
+        "/aws/lambda/vmq-draft-change-note",
+        "/aws/lambda/vmq-validate-schema",
+        "/aws/lambda/vmq-create-jira-draft",
+        "/aws/lambda/vmq-generate-compliance-pack"
+      ],
+      "query": "fields @timestamp, action, user.id as userId, user.groups as attemptedGroups, deny_reason\n| filter event = \"action_deny\"\n| sort @timestamp desc\n| limit 200",
+      "timeRange": "7d"
+    },
+    {
+      "name": "RUBEDO Action Latency p95 by Action",
+      "description": "95th percentile latency per action, use to identify slow stubs or future LLM overhead",
+      "logGroups": [
+        "/aws/lambda/vmq-summarize-docs",
+        "/aws/lambda/vmq-generate-faq",
+        "/aws/lambda/vmq-draft-change-note",
+        "/aws/lambda/vmq-validate-schema",
+        "/aws/lambda/vmq-create-jira-draft",
+        "/aws/lambda/vmq-generate-compliance-pack"
+      ],
+      "query": "fields @timestamp, action, latency_ms\n| filter event = \"action_ok\"\n| stats pct(latency_ms, 95) as p95_latency_ms, pct(latency_ms, 50) as p50_latency_ms, count() as invocations by action\n| sort p95_latency_ms desc",
+      "timeRange": "24h"
+    },
+    {
+      "name": "RUBEDO Errors and Failures",
+      "description": "All Lambda errors, exceptions, and action_err events for troubleshooting",
+      "logGroups": [
+        "/aws/lambda/vmq-summarize-docs",
+        "/aws/lambda/vmq-generate-faq",
+        "/aws/lambda/vmq-draft-change-note",
+        "/aws/lambda/vmq-validate-schema",
+        "/aws/lambda/vmq-create-jira-draft",
+        "/aws/lambda/vmq-generate-compliance-pack"
+      ],
+      "query": "fields @timestamp, action, error, @message\n| filter event = \"action_err\" or @message like /ERROR/ or @message like /Exception/\n| sort @timestamp desc\n| limit 100",
+      "timeRange": "7d"
+    },
+    {
+      "name": "RUBEDO Top Users by Invocations",
+      "description": "Power users ranked by action count, use for training and feedback loops",
+      "logGroups": [
+        "/aws/lambda/vmq-summarize-docs",
+        "/aws/lambda/vmq-generate-faq",
+        "/aws/lambda/vmq-draft-change-note",
+        "/aws/lambda/vmq-validate-schema",
+        "/aws/lambda/vmq-create-jira-draft",
+        "/aws/lambda/vmq-generate-compliance-pack"
+      ],
+      "query": "fields @timestamp, user.id as userId, action\n| filter event = \"action_ok\"\n| stats count() as actionCount by userId\n| sort actionCount desc\n| limit 20",
+      "timeRange": "7d"
+    },
+    {
+      "name": "RUBEDO Persona Distribution",
+      "description": "Action invocations grouped by persona (derived from user.groups), shows which roles use which actions",
+      "logGroups": [
+        "/aws/lambda/vmq-summarize-docs",
+        "/aws/lambda/vmq-generate-faq",
+        "/aws/lambda/vmq-draft-change-note",
+        "/aws/lambda/vmq-validate-schema",
+        "/aws/lambda/vmq-create-jira-draft",
+        "/aws/lambda/vmq-generate-compliance-pack"
+      ],
+      "query": "fields @timestamp, action, user.groups.0 as primaryGroup\n| filter event = \"action_ok\"\n| stats count() as invocations by action, primaryGroup\n| sort invocations desc",
+      "timeRange": "7d"
+    }
+  ],
+  "setup": {
+    "description": "To create these saved queries in CloudWatch Logs Insights",
+    "steps": [
+      "1. Navigate to CloudWatch → Logs → Insights in eu-west-1",
+      "2. Click 'Save' in the query editor",
+      "3. Copy the query text from this file",
+      "4. Select the log groups listed for that query",
+      "5. Set the default time range",
+      "6. Name the query and save"
+    ],
+    "automation": "Use aws logs put-query-definition to automate (requires query definition JSON)",
+    "cliExample": "aws logs put-query-definition --name 'RUBEDO Actions per Day' --query-string '<query>' --log-group-names '/aws/lambda/vmq-summarize-docs' ... --region eu-west-1"
+  }
+}
