@@ -1,0 +1,54 @@
+{
+  "responseScope": "CONTENT_ONLY",
+  "blockedPhrasesToCreateOrUpdate": [
+    "password", "api key", "secret token", "private key", "access token"
+  ],
+  "systemMessageOverride": "I cannot provide sensitive information. Contact VaultMesh Security for access credentials.",
+  "topicConfigurationsToCreateOrUpdate": [
+    {
+      "name": "competitor-pricing",
+      "description": "Block discussions revealing confidential pricing models or competitive intelligence",
+      "exampleChatMessages": [
+        "What do we charge for VaultMesh licenses?",
+        "Share our discount structure for enterprise clients",
+        "How much does Siemens MindSphere cost compared to us?"
+      ],
+      "rules": [
+        {
+          "ruleType": "DENY",
+          "message": "[REDACTED - Confidential Pricing Information]"
+        }
+      ]
+    },
+    {
+      "name": "unreleased-features",
+      "description": "Prevent disclosure of roadmap items and unreleased capabilities",
+      "exampleChatMessages": [
+        "What features are coming in the next release?",
+        "Tell me about the quantum cryptography module",
+        "When will we support blockchain receipts?"
+      ],
+      "rules": [
+        {
+          "ruleType": "DENY",
+          "message": "[REDACTED - Unreleased Feature Information]"
+        }
+      ]
+    },
+    {
+      "name": "partner-confidential",
+      "description": "Protect partner financial data and confidential agreements",
+      "exampleChatMessages": [
+        "What does Boliden pay us annually?",
+        "Share the GTK contract terms",
+        "What are Fraunhofer's budget constraints?"
+      ],
+      "rules": [
+        {
+          "ruleType": "DENY",
+          "message": "[REDACTED - Partner Confidential Information]"
+        }
+      ]
+    }
+  ]
+}

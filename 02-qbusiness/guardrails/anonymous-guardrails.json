@@ -1,0 +1,8 @@
+{
+  "blockedPhrasesConfigurationUpdate": {
+    "systemMessageOverride": "I can't help with credentials or secrets. Please contact VaultMesh Security.",
+    "blockedPhrasesToCreateOrUpdate": [
+      "password","api key","secret key","private key","access token","bearer token"
+    ]
+  }
+}

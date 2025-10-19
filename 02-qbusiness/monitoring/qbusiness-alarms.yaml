@@ -1,0 +1,56 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: CloudWatch alarms for Q Business pipeline & sync jobs
+
+Parameters:
+  PipelineName:
+    Type: String
+  TopicEmail:
+    Type: String
+
+Resources:
+  AlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Subscription:
+        - Endpoint: !Ref TopicEmail
+          Protocol: email
+
+  PipelineFailedAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: !Sub "${PipelineName}-Failed"
+      AlarmDescription: "Pipeline execution failed"
+      Namespace: AWS/CodePipeline
+      MetricName: FailedExecutions
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      Dimensions:
+        - Name: PipelineName
+          Value: !Ref PipelineName
+      AlarmActions:
+        - !Ref AlarmTopic
+
+  QSyncFailureAlarm:
+    Type: AWS::CloudWatch::Alarm
+    Properties:
+      AlarmName: "QBusinessSyncFailed"
+      AlarmDescription: "Detect Q Business data source sync failures"
+      Namespace: "VaultMesh/QBusiness"
+      MetricName: "SyncFailed"
+      Statistic: Sum
+      Period: 300
+      EvaluationPeriods: 1
+      Threshold: 1
+      ComparisonOperator: GreaterThanOrEqualToThreshold
+      TreatMissingData: notBreaching
+      AlarmActions:
+        - !Ref AlarmTopic
+
+Outputs:
+  SNSTopicArn:
+    Value: !Ref AlarmTopic
+

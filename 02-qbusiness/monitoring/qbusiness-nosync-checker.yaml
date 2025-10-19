@@ -1,0 +1,111 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Detect if Q Business has not synced in N hours and notify via SNS
+Parameters:
+  AppId: { Type: String }
+  IndexId: { Type: String }
+  DataSourceId: { Type: String }
+  MaxHours: { Type: Number, Default: 24 }
+  TopicArn: { Type: String, Description: "SNS topic ARN for alerts" }
+Resources:
+  CheckerRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: lambda.amazonaws.com }
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: QBusinessNoSyncPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: [ logs:CreateLogGroup, logs:CreateLogStream, logs:PutLogEvents ]
+                Resource: "*"
+              - Effect: Allow
+                Action: [ qbusiness:ListDataSourceSyncJobs ]
+                Resource: "*"
+              - Effect: Allow
+                Action: [ cloudwatch:PutMetricData ]
+                Resource: "*"
+              - Effect: Allow
+                Action: sns:Publish
+                Resource: !Ref TopicArn
+
+  CheckerFn:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: python3.12
+      Handler: index.handler
+      Role: !GetAtt CheckerRole.Arn
+      Timeout: 30
+      Environment:
+        Variables:
+          APP_ID: !Ref AppId
+          INDEX_ID: !Ref IndexId
+          DS_ID: !Ref DataSourceId
+          MAX_HOURS: !Ref MaxHours
+          TOPIC_ARN: !Ref TopicArn
+      Code:
+        ZipFile: |
+          import os, boto3, datetime
+          from botocore.config import Config
+          cfg = Config(retries={'max_attempts': 5, 'mode': 'standard'})
+          q = boto3.client('qbusiness', config=cfg)
+          cw = boto3.client('cloudwatch', config=cfg)
+          sns = boto3.client('sns', config=cfg)
+
+          def handler(event, context):
+            app=os.getenv('APP_ID'); idx=os.getenv('INDEX_ID'); ds=os.getenv('DS_ID')
+            maxh=int(os.getenv('MAX_HOURS','24')); topic=os.getenv('TOPIC_ARN')
+            r = q.list_data_source_sync_jobs(applicationId=app, indexId=idx, dataSourceId=ds, maxResults=1)
+            hist = r.get('history', [])
+            now = datetime.datetime.now(datetime.timezone.utc)
+            ok=True; msg="No jobs found"
+            if hist:
+              last=hist[0]
+              ts = last.get('endTime') or last.get('startTime')
+              if not ts:
+                ok=False; msg="Latest job has no timestamp"
+              else:
+                dt = ts
+                if isinstance(dt, str):
+                  try:
+                    # Fallback parse; Lambda returns datetime in SDK objects typically
+                    dt = datetime.datetime.fromisoformat(dt.replace('Z','+00:00'))
+                  except Exception:
+                    dt = now - datetime.timedelta(hours=maxh+1)
+                delta = now - dt
+                if delta.total_seconds() > maxh*3600:
+                  ok=False; msg=f"Last sync at {dt.isoformat()} is older than {maxh}h"
+                else:
+                  msg=f"Last sync {dt.isoformat()} within {maxh}h"
+            cw.put_metric_data(Namespace="VaultMesh/QBusiness", MetricData=[{
+              'MetricName':'NoSync','Value':0 if ok else 1,'Unit':'Count','Dimensions':[{'Name':'App','Value':app}]
+            }])
+            if not ok and topic:
+              sns.publish(TopicArn=topic, Subject="Q Business NoSync Alert", Message=msg)
+            return {'ok': ok, 'message': msg}
+
+  Rule:
+    Type: AWS::Events::Rule
+    Properties:
+      ScheduleExpression: rate(1 day)
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt CheckerFn.Arn
+          Id: target
+  Perm:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref CheckerFn
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt Rule.Arn
+
+Outputs:
+  FunctionName:
+    Value: !Ref CheckerFn
+

@@ -1,0 +1,83 @@
+# VaultMesh Q Business Guardrails
+# Scope: enforce enterprise-only content; block secrets, roadmap, pricing, PII
+
+responseScope: ENTERPRISE_CONTENT_ONLY
+
+blockedPhrasesConfigurationUpdate:
+  systemMessageOverride: "I can't help with credentials, secrets, or restricted topics. Please contact VaultMesh Security."
+  blockedPhrasesToCreateOrUpdate:
+    # Secrets / auth
+    - "password"
+    - "passphrase"
+    - "api key"
+    - "access key"
+    - "secret key"
+    - "token"
+    - "bearer token"
+    - "client secret"
+    - "private key"
+    - "ssh key"
+    - "mnemonic"
+    - "recovery phrase"
+    - "jwt signing key"
+    - "oauth client secret"
+    - "vault token"
+    # PII tripwires (lightweight)
+    - "passport number"
+    - "national id"
+    - "tax id"
+    - "social security number"
+    - "credit card"
+    - "iban"
+
+topicConfigurationsToCreateOrUpdate:
+  - name: "competitor-pricing"
+    description: "Blocks sharing non-public pricing, discounts, rates, or deal terms."
+    exampleChatMessages:
+      - "What price did we quote Customer X?"
+      - "What discount do we give Partner Y?"
+    rules:
+      - ruleType: DENY
+        message: "[REDACTED] Confidential pricing cannot be shared."
+        includedUsersAndGroups:
+          groupIds:
+            - "VaultMesh-Engineering"
+            - "VaultMesh-Sales"
+            - "VaultMesh-Management"
+
+  - name: "unreleased-features-roadmap"
+    description: "Prevents disclosure of unreleased product features or internal roadmaps."
+    exampleChatMessages:
+      - "List features shipping next quarter."
+      - "What are we launching in M18?"
+    rules:
+      - ruleType: DENY
+        message: "Unreleased roadmap information is restricted."
+        includedUsersAndGroups:
+          groupIds:
+            - "VaultMesh-Engineering"
+            - "VaultMesh-Sales"
+            - "VaultMesh-Management"
+
+  - name: "partner-financials"
+    description: "Prevents disclosure of partner financials or confidential MoU annexes."
+    exampleChatMessages:
+      - "What's Boliden's 2025 budget with us?"
+      - "Share Northvolt's negotiated rates."
+    rules:
+      - ruleType: DENY
+        message: "Partner financial information is confidential."
+        includedUsersAndGroups:
+          groupIds:
+            - "VaultMesh-Engineering"
+            - "VaultMesh-Sales"
+            - "VaultMesh-Management"
+
+# Optional group response scopes (kept uniform here)
+groupOverridesToCreateOrUpdate:
+  - groupId: "VaultMesh-Engineering"
+    responseScope: ENTERPRISE_CONTENT_ONLY
+  - groupId: "VaultMesh-Sales"
+    responseScope: ENTERPRISE_CONTENT_ONLY
+  - groupId: "VaultMesh-Management"
+    responseScope: ENTERPRISE_CONTENT_ONLY

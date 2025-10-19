@@ -1,0 +1,34 @@
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "qbusiness:CreateApplication", "qbusiness:UpdateApplication", "qbusiness:DeleteApplication", "qbusiness:GetApplication", "qbusiness:ListApplications",
+        "qbusiness:CreateIndex", "qbusiness:DeleteIndex", "qbusiness:ListIndices", "qbusiness:DescribeIndex", "qbusiness:UpdateIndex", "qbusiness:GetIndex",
+        "qbusiness:CreateRetriever", "qbusiness:UpdateRetriever", "qbusiness:DeleteRetriever", "qbusiness:GetRetriever", "qbusiness:ListRetrievers",
+        "qbusiness:CreateDataSource", "qbusiness:UpdateDataSource", "qbusiness:DeleteDataSource", "qbusiness:GetDataSource",
+        "qbusiness:ListDataSources", "qbusiness:ListDataSourceSyncJobs", "qbusiness:GetDataSourceSyncJob",
+        "qbusiness:StartDataSourceSyncJob", "qbusiness:StopDataSourceSyncJob",
+        "qbusiness:CreateWebExperience", "qbusiness:UpdateWebExperience", "qbusiness:GetWebExperience", "qbusiness:ListWebExperiences", "qbusiness:DeleteWebExperience",
+        "qbusiness:UpdateChatControlsConfiguration", "qbusiness:GetChatControlsConfiguration",
+        "qbusiness:Chat", "qbusiness:ChatSync",
+        "qapps:*"
+      ],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": [
+        "iam:PassRole", "iam:GetRole", "iam:ListRoles",
+        "secretsmanager:GetSecretValue", "secretsmanager:DescribeSecret",
+        "kms:Encrypt", "kms:Decrypt", "kms:DescribeKey", "kms:GenerateDataKey",
+        "cloudwatch:*", "logs:*",
+        "s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:ListBucket", "s3:GetBucketLocation", "s3:GetBucketVersioning",
+        "sts:AssumeRole", "sts:GetCallerIdentity"
+      ],
+      "Resource": "*"
+    }
+  ]
+}
+

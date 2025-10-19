@@ -1,0 +1,234 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Q Business Docs → S3 → Index (CodeCommit/CodeBuild/CodePipeline)
+
+Parameters:
+  RepoName:
+    Type: String
+    Description: CodeCommit repository name
+  BranchName:
+    Type: String
+    Default: main
+  ExportBucket:
+    Type: String
+    Description: S3 bucket that Q Business data source reads from (approved export)
+  Region:
+    Type: String
+    Default: eu-west-1
+  QbAppId:
+    Type: String
+  QbIndexId:
+    Type: String
+  QbDataSourceId:
+    Type: String
+  ApplyGuardrailsByCommitMsg:
+    Type: String
+    AllowedValues: ["true", "false"]
+    Default: "false"
+
+Resources:
+  ArtifactBucket:
+    Type: AWS::S3::Bucket
+
+  CodeBuildRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codebuild.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: QBusinessBuildPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Sid: Logs
+                Effect: Allow
+                Action: [ logs:CreateLogGroup, logs:CreateLogStream, logs:PutLogEvents ]
+                Resource: "*"
+              - Sid: S3SyncDocs
+                Effect: Allow
+                Action: [ s3:ListBucket ]
+                Resource: !Sub arn:aws:s3:::${ExportBucket}
+              - Sid: S3ObjectWrite
+                Effect: Allow
+                Action: [ s3:PutObject, s3:DeleteObject, s3:AbortMultipartUpload, s3:PutObjectAcl ]
+                Resource: !Sub arn:aws:s3:::${ExportBucket}/*
+              - Sid: QBusinessSync
+                Effect: Allow
+                Action:
+                  - qbusiness:StartDataSourceSyncJob
+                  - qbusiness:ListDataSourceSyncJobs
+                  - qbusiness:UpdateChatControlsConfiguration
+                  - qbusiness:GetChatControlsConfiguration
+                Resource: "*"
+
+  CodeBuildProject:
+    Type: AWS::CodeBuild::Project
+    Properties:
+      Name: !Sub QBusinessDocsSync-${RepoName}
+      ServiceRole: !GetAtt CodeBuildRole.Arn
+      Artifacts:
+        Type: CODEPIPELINE
+      Environment:
+        ComputeType: BUILD_GENERAL1_SMALL
+        Image: aws/codebuild/standard:7.0
+        Type: LINUX_CONTAINER
+        EnvironmentVariables:
+          - Name: REGION
+            Value: !Ref Region
+          - Name: EXPORT_BUCKET
+            Value: !Ref ExportBucket
+          - Name: QB_APP_ID
+            Value: !Ref QbAppId
+          - Name: QB_INDEX_ID
+            Value: !Ref QbIndexId
+          - Name: QB_DS_ID
+            Value: !Ref QbDataSourceId
+          - Name: APPLY_GUARDS
+            Value: !Ref ApplyGuardrailsByCommitMsg
+      Source:
+        Type: CODEPIPELINE
+        BuildSpec: |
+          version: 0.2
+          phases:
+            build:
+              commands: |
+                set -euo pipefail
+                echo "Export docs → /tmp/q-business-export"
+                mkdir -p /tmp/q-business-export
+                shopt -s nullglob
+                cp docs/*.md /tmp/q-business-export/ || true
+
+                echo "Stage docs to S3: s3://$EXPORT_BUCKET/_staging/"
+                aws s3 sync /tmp/q-business-export "s3://$EXPORT_BUCKET/_staging/" --delete --region "$REGION"
+
+                echo "Trigger Q Business sync & wait"
+                aws qbusiness start-data-source-sync-job \
+                  --region "$REGION" --application-id "$QB_APP_ID" \
+                  --index-id "$QB_INDEX_ID" --data-source-id "$QB_DS_ID" >/dev/null
+
+                for i in $(seq 1 60); do
+                  s=$(aws qbusiness list-data-source-sync-jobs \
+                    --region "$REGION" --application-id "$QB_APP_ID" \
+                    --index-id "$QB_INDEX_ID" --data-source-id "$QB_DS_ID" \
+                    --query "history[0].status" --output text 2>/dev/null || true)
+                  echo "[$i] $s"; [[ "$s" =~ ^(SUCCEEDED|FAILED|STOPPED)$ ]] && break; sleep 6
+                done
+                [[ "$s" == "SUCCEEDED" ]]
+
+                echo "Save last 10 sync jobs"
+                aws qbusiness list-data-source-sync-jobs \
+                  --region "$REGION" --application-id "$QB_APP_ID" \
+                  --index-id "$QB_INDEX_ID" --data-source-id "$QB_DS_ID" \
+                  --query 'history[:10]' --output json > sync-jobs.json
+
+                echo "Upload DR sync log to S3 (staging)"
+                aws s3 cp sync-jobs.json "s3://$EXPORT_BUCKET/_staging/dr/sync-jobs.json"
+                # Also write a versioned copy using CodeBuild build id
+                if [[ -n "${CODEBUILD_BUILD_ID:-}" ]]; then
+                  SAFE_ID=$(echo "$CODEBUILD_BUILD_ID" | tr '/' '-')
+                  aws s3 cp sync-jobs.json "s3://$EXPORT_BUCKET/_staging/dr/sync-jobs-$SAFE_ID.json"
+                fi
+
+                if [[ "$APPLY_GUARDS" == "true" ]]; then
+                  echo "Apply guardrails (conditional)"
+                  if [[ -f 02-qbusiness/guardrails/topic-controls.json ]]; then
+                    aws qbusiness update-chat-controls-configuration \
+                      --region "$REGION" --application-id "$QB_APP_ID" \
+                      --cli-input-json file://02-qbusiness/guardrails/topic-controls.json || true
+                  fi
+                fi
+          artifacts:
+            files:
+              - sync-jobs.json
+
+  CodePipelineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: codepipeline.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: PipelinePolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:GetObjectVersion
+                  - s3:PutObject
+                Resource: !Sub ${ArtifactBucket.Arn}/*
+              - Effect: Allow
+                Action: [ s3:ListBucket ]
+                Resource: !GetAtt ArtifactBucket.Arn
+              - Effect: Allow
+                Action:
+                  - codebuild:BatchGetBuilds
+                  - codebuild:StartBuild
+                Resource: "*"
+              - Effect: Allow
+                Action:
+                  - codecommit:GetBranch
+                  - codecommit:GetCommit
+                  - codecommit:UploadArchive
+                  - codecommit:GetUploadArchiveStatus
+                  - codecommit:CancelUploadArchive
+                Resource: "*"
+
+  SourceRepo:
+    Type: AWS::CodeCommit::Repository
+    Properties:
+      RepositoryName: !Ref RepoName
+      Triggers: []
+
+  Pipeline:
+    Type: AWS::CodePipeline::Pipeline
+    Properties:
+      RoleArn: !GetAtt CodePipelineRole.Arn
+      ArtifactStore:
+        Type: S3
+        Location: !Ref ArtifactBucket
+      Stages:
+        - Name: Source
+          Actions:
+            - Name: Code
+              ActionTypeId:
+                Category: Source
+                Owner: AWS
+                Provider: CodeCommit
+                Version: '1'
+              OutputArtifacts:
+                - Name: SourceOutput
+              Configuration:
+                RepositoryName: !Ref RepoName
+                BranchName: !Ref BranchName
+        - Name: Build
+          Actions:
+            - Name: BuildAndSync
+              ActionTypeId:
+                Category: Build
+                Owner: AWS
+                Provider: CodeBuild
+                Version: '1'
+              InputArtifacts:
+                - Name: SourceOutput
+              OutputArtifacts:
+                - Name: BuildOutput
+              Configuration:
+                ProjectName: !Ref CodeBuildProject
+
+Outputs:
+  PipelineName:
+    Value: !Ref Pipeline
+  RepoCloneUrlHttp:
+    Value: !GetAtt SourceRepo.CloneUrlHttp
+  ArtifactBucketName:
+    Value: !Ref ArtifactBucket

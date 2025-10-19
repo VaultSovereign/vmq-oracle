@@ -1,0 +1,24 @@
+{
+  "type": "S3",
+  "syncMode": "FULL_CRAWL",
+  "connectionConfiguration": {
+    "repositoryEndpointMetadata": {
+      "BucketName": "vaultmesh-knowledge-base"
+    }
+  },
+  "repositoryConfigurations": {
+    "document": {
+      "fieldMappings": [
+        {
+          "dataSourceFieldName": "s3_metadata_classification",
+          "indexFieldName": "classification",
+          "indexFieldType": "STRING"
+        }
+      ],
+      "inclusionPatterns": [
+        ".*\\.(pdf|docx|md|rst|txt|json)$"
+      ]
+    }
+  },
+  "version": "1.0.0"
+}

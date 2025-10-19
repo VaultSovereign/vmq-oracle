@@ -1,0 +1,92 @@
+name: Sync Q Business (Docs → S3 → Index)
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'docs/**'
+      - '02-qbusiness/guardrails/topic-controls.json'
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure AWS via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_QB_OIDC_ROLE_ARN }}
+          aws-region: eu-west-1
+
+      - name: Export docs → /tmp/q-business-export
+        run: |
+          mkdir -p /tmp/q-business-export
+          shopt -s nullglob
+          cp docs/*.md /tmp/q-business-export/
+
+      - name: Sync to S3 (approved bucket)
+        env:
+          BUCKET: ${{ secrets.QB_EXPORT_BUCKET }}
+        run: |
+          aws s3 sync /tmp/q-business-export "s3://${BUCKET}/" --delete
+
+      - name: Trigger Q Business sync & wait
+        env:
+          REGION: eu-west-1
+          APP_ID:  ${{ secrets.QB_APP_ID }}
+          INDEX_ID: ${{ secrets.QB_INDEX_ID }}
+          DS_ID:   ${{ secrets.QB_DS_ID }}
+        run: |
+          set -euo pipefail
+          aws qbusiness start-data-source-sync-job \
+            --region "$REGION" --application-id "$APP_ID" \
+            --index-id "$INDEX_ID" --data-source-id "$DS_ID" >/dev/null
+          for i in {1..60}; do
+            s=$(aws qbusiness list-data-source-sync-jobs \
+              --region "$REGION" --application-id "$APP_ID" \
+              --index-id "$INDEX_ID" --data-source-id "$DS_ID" \
+              --query "history[0].status" --output text 2>/dev/null || true)
+            echo "[$i] $s"; [[ "$s" =~ ^(SUCCEEDED|FAILED|STOPPED)$ ]] && break; sleep 6
+          done
+          [[ "$s" == "SUCCEEDED" ]]
+          # Save a small audit trail of the last 10 sync jobs
+          aws qbusiness list-data-source-sync-jobs \
+            --region "$REGION" --application-id "$APP_ID" \
+            --index-id "$INDEX_ID" --data-source-id "$DS_ID" \
+            --query 'history[:10]' --output json > sync-jobs.json
+
+      - name: Upload sync logs to S3 baseline
+        env:
+          BUCKET: ${{ secrets.QB_EXPORT_BUCKET }}
+        run: |
+          aws s3 cp sync-jobs.json "s3://${BUCKET}/ci/sync-jobs.json"
+
+      - name: Upload sync logs (artifact)
+        uses: actions/upload-artifact@v4
+        with:
+          name: qbusiness-sync-jobs-${{ github.sha }}
+          path: sync-jobs.json
+
+      # Optional: apply guardrails on demand
+      - name: Apply guardrails (conditional)
+        if: contains(github.event.head_commit.message, '[apply-guardrails]')
+        env:
+          REGION: eu-west-1
+          APP_ID:  ${{ secrets.QB_APP_ID }}
+        run: |
+          set -euo pipefail
+          jq '.' 02-qbusiness/guardrails/topic-controls.json >/dev/null
+          aws qbusiness update-chat-controls-configuration \
+            --region "$REGION" \
+            --application-id "$APP_ID" \
+            --cli-input-json file://02-qbusiness/guardrails/topic-controls.json
+
+      - name: Upload versioned sync log to S3 (by SHA)
+        if: always()
+        env:
+          BUCKET: ${{ secrets.QB_EXPORT_BUCKET }}
+        run: |
+          aws s3 cp sync-jobs.json "s3://${BUCKET}/ci/sync-jobs-${GITHUB_SHA}.json"

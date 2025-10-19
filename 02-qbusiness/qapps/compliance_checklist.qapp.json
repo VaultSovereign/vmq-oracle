@@ -1,0 +1,9 @@
+{
+  "name": "Compliance Checklist Builder",
+  "description": "Generate a compliance checklist from policy docs and standards",
+  "inputs": [
+    {"type": "text", "name": "framework", "label": "Framework (e.g., ISO 27001 Annex A)"}
+  ],
+  "prompt": "Create a checklist for {framework} mapping controls to VaultMesh policies and procedures. Include evidence locations and owners."
+}
+

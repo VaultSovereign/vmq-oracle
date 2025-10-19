@@ -1,0 +1,9 @@
+{
+  "name": "EU Proposal Section Generator",
+  "description": "Auto-draft proposal sections from VaultMesh templates",
+  "inputs": [
+    {"type": "text", "name": "section", "label": "Which section? (e.g., WP4.3 Technical Approach)"}
+  ],
+  "prompt": "Draft a {section} for the VaultMesh Polis proposal; include KPIs and risks. Use indexed S3 materials."
+}
+

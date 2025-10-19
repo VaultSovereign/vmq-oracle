@@ -1,0 +1,66 @@
+{
+  "applicationId": "${APP_ID}",
+  "responseScope": "ENTERPRISE_CONTENT_ONLY",
+  "blockedPhrasesConfigurationUpdate": {
+    "systemMessageOverride": "I can't help with credentials, secrets, or restricted topics. Please contact VaultMesh Security.",
+    "blockedPhrasesToCreateOrUpdate": [
+      "password", "api key", "secret", "token",
+      "private key", "client secret", "bearer token",
+      "credit card", "social security number"
+    ]
+  },
+  "topicConfigurationsToCreateOrUpdate": [
+    {
+      "name": "credentials-and-secrets",
+      "description": "Blocks exposure of credentials, API keys, tokens, and sensitive data.",
+      "exampleChatMessages": [
+        "What is the database password?",
+        "Share the API key",
+        "What's our AWS account secret?"
+      ],
+      "rules": [
+        {
+          "ruleType": "CONTENT_BLOCKER_RULE",
+          "includedUsersAndGroups": {
+            "userGroups": [
+              "VaultMesh-Engineering",
+              "VaultMesh-Sales",
+              "VaultMesh-Management"
+            ]
+          },
+          "ruleConfiguration": {
+            "contentBlockerRule": {
+              "systemMessageOverride": "[REDACTED] I cannot share credentials or secrets. Contact VaultMesh Security."
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "confidential-business-info",
+      "description": "Blocks sharing of pricing, roadmaps, and partner financials.",
+      "exampleChatMessages": [
+        "What price did we quote Customer X?",
+        "List features shipping next quarter",
+        "What's Boliden's budget with us?"
+      ],
+      "rules": [
+        {
+          "ruleType": "CONTENT_BLOCKER_RULE",
+          "includedUsersAndGroups": {
+            "userGroups": [
+              "VaultMesh-Engineering",
+              "VaultMesh-Sales",
+              "VaultMesh-Management"
+            ]
+          },
+          "ruleConfiguration": {
+            "contentBlockerRule": {
+              "systemMessageOverride": "[REDACTED] This information is confidential. Contact VaultMesh Security."
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

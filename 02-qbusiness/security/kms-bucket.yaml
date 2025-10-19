@@ -1,0 +1,85 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: KMS key + default SSE-KMS for the Q Business export bucket
+Parameters:
+  BucketName:
+    Type: String
+  CiRoleArn:
+    Type: String
+    Description: GitHub OIDC CI role ARN (uploader)
+  QbDsRoleArn:
+    Type: String
+    Description: Q Business data source role ARN (reader)
+Resources:
+  ExportKmsKey:
+    Type: AWS::KMS::Key
+    Properties:
+      Description: !Sub "SSE-KMS for ${BucketName} (VaultMesh Q Business export)"
+      EnableKeyRotation: true
+      KeyPolicy:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: RootFullAccess
+            Effect: Allow
+            Principal:
+              AWS: !Sub "arn:aws:iam::${AWS::AccountId}:root"
+            Action: "kms:*"
+            Resource: "*"
+          - Sid: GitHubCIEncrypt
+            Effect: Allow
+            Principal:
+              AWS: !Ref CiRoleArn
+            Action:
+              - kms:Encrypt
+              - kms:Decrypt
+              - kms:ReEncrypt*
+              - kms:GenerateDataKey*
+              - kms:DescribeKey
+            Resource: "*"
+          - Sid: QBusinessDsDecrypt
+            Effect: Allow
+            Principal:
+              AWS: !Ref QbDsRoleArn
+            Action:
+              - kms:Decrypt
+              - kms:DescribeKey
+            Resource: "*"
+
+  BucketEncryption:
+    Type: AWS::S3::BucketEncryption
+    Properties:
+      BucketName: !Ref BucketName
+      ServerSideEncryptionConfiguration:
+        - ServerSideEncryptionByDefault:
+            SSEAlgorithm: aws:kms
+            KMSMasterKeyID: !GetAtt ExportKmsKey.Arn
+
+  BucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref BucketName
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: EnforceKmsOnly
+            Effect: Deny
+            Principal: "*"
+            Action: s3:PutObject
+            Resource: !Sub "arn:aws:s3:::${BucketName}/*"
+            Condition:
+              StringNotEquals:
+                s3:x-amz-server-side-encryption: "aws:kms"
+          - Sid: AllowSSLOnly
+            Effect: Deny
+            Principal: "*"
+            Action: "s3:*"
+            Resource:
+              - !Sub "arn:aws:s3:::${BucketName}"
+              - !Sub "arn:aws:s3:::${BucketName}/*"
+            Condition:
+              Bool:
+                aws:SecureTransport: "false"
+
+Outputs:
+  KmsKeyArn:
+    Value: !GetAtt ExportKmsKey.Arn
+

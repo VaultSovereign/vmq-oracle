@@ -1,0 +1,33 @@
+name: No-Sync Daily
+on:
+  schedule:
+    - cron: '0 4 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Configure AWS via OIDC
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ secrets.AWS_QB_OIDC_ROLE_ARN }}
+          aws-region: eu-west-1
+
+      - name: Check latest sync
+        env:
+          REGION: eu-west-1
+          APP_ID:  ${{ secrets.QB_APP_ID }}
+          INDEX_ID: ${{ secrets.QB_INDEX_ID }}
+          DS_ID:   ${{ secrets.QB_DS_ID }}
+        run: |
+          set -euo pipefail
+          last=$(aws qbusiness list-data-source-sync-jobs \
+            --region "$REGION" --application-id "$APP_ID" \
+            --index-id "$INDEX_ID" --data-source-id "$DS_ID" \
+            --query 'history[0].endTime' --output text)
+          echo "LastSyncEndTime=$last"
+          # Optionally fail if older than 24h by comparing with date math

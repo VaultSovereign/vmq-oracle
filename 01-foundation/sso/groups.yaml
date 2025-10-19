@@ -1,0 +1,8 @@
+groups:
+  - name: VaultMesh-Engineering
+    description: Engineering team
+  - name: VaultMesh-Sales
+    description: Sales team
+  - name: VaultMesh-Management
+    description: Management and leadership
+

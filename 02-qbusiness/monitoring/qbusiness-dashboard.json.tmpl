@@ -1,0 +1,198 @@
+{
+  "widgets": [
+    {
+      "type": "text",
+      "x": 0,
+      "y": 0,
+      "width": 24,
+      "height": 3,
+      "properties": {
+        "markdown": "# VaultMesh • Q Business Ops\n**Region:** __REGION__  |  **App:** __APP_ID__  |  **Pipeline:** __PIPELINE_NAME__"
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 3,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "region": "__REGION__",
+        "title": "SyncFailed (VaultMesh/QBusiness)",
+        "metrics": [
+          [
+            "VaultMesh/QBusiness",
+            "SyncFailed",
+            "App",
+            "__APP_ID__",
+            {
+              "stat": "Sum"
+            }
+          ]
+        ],
+        "yAxis": {
+          "left": {
+            "min": 0
+          }
+        },
+        "view": "timeSeries",
+        "stacked": false,
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 3,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "region": "__REGION__",
+        "title": "NoSync (VaultMesh/QBusiness)",
+        "metrics": [
+          [
+            "VaultMesh/QBusiness",
+            "NoSync",
+            "App",
+            "__APP_ID__",
+            {
+              "stat": "Sum"
+            }
+          ]
+        ],
+        "yAxis": {
+          "left": {
+            "min": 0
+          }
+        },
+        "view": "timeSeries",
+        "stacked": false,
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 9,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "region": "__REGION__",
+        "title": "CodePipeline FailedExecutions",
+        "metrics": [
+          [
+            "AWS/CodePipeline",
+            "FailedExecutions",
+            "PipelineName",
+            "__PIPELINE_NAME__",
+            {
+              "stat": "Sum"
+            }
+          ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "period": 300,
+        "yAxis": {
+          "left": {
+            "min": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 9,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "region": "__REGION__",
+        "title": "CodePipeline Executions (Success vs Fail)",
+        "view": "singleValue",
+        "metrics": [
+          [
+            "AWS/CodePipeline",
+            "FailedExecutions",
+            "PipelineName",
+            "__PIPELINE_NAME__",
+            {
+              "stat": "Sum",
+              "label": "Failed (5m)"
+            }
+          ],
+          [
+            ".",
+            "SucceededExecutions",
+            ".",
+            ".",
+            {
+              "stat": "Sum",
+              "label": "Succeeded (5m)"
+            }
+          ]
+        ],
+        "period": 300
+      }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 15,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "region": "__REGION__",
+        "title": "S3 Bucket Size (Bytes) — vaultmesh-knowledge-base",
+        "metrics": [
+          [
+            "AWS/S3",
+            "BucketSizeBytes",
+            "BucketName",
+            "vaultmesh-knowledge-base",
+            "StorageType",
+            "StandardStorage",
+            {
+              "stat": "Average"
+            }
+          ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "period": 86400,
+        "yAxis": {
+          "left": {
+            "min": 0
+          }
+        }
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 15,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "region": "__REGION__",
+        "title": "S3 Object Count — vaultmesh-knowledge-base",
+        "metrics": [
+          [
+            "AWS/S3",
+            "NumberOfObjects",
+            "BucketName",
+            "vaultmesh-knowledge-base",
+            "StorageType",
+            "AllStorageTypes",
+            {
+              "stat": "Average"
+            }
+          ]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "period": 86400
+      }
+    }
+  ]
+}
