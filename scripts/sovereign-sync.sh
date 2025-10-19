@@ -5,7 +5,8 @@
 set -euo pipefail
 
 SA="${SA:-$HOME/sovereign-architecture}"
-VMQ="${VMQ:-$HOME/work/vm-business-q}"
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || printf '')"
+VMQ="${VMQ:-${REPO_ROOT:-$HOME/work/vmq-oracle}}"
 
 echo "🜄 SOVEREIGN ARCHITECTURE - COMPLETE SYNC PIPELINE"
 echo "=================================================="

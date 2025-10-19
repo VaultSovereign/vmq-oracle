@@ -4,7 +4,8 @@
 
 set -euo pipefail
 
-VMQ="${HOME}/work/vm-business-q"
+REPO_ROOT="$(git rev-parse --show-toplevel 2>/dev/null || printf '')"
+VMQ="${VMQ:-${REPO_ROOT:-$HOME/work/vmq-oracle}}"
 cd "$VMQ"
 set -a && . ./.env && set +a
 

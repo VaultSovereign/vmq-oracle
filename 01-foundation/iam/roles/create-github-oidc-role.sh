@@ -6,7 +6,7 @@ set -euo pipefail
 # Required env:
 #   BUCKET_NAME   - S3 bucket for approved exports (e.g., vaultmesh-knowledge-base)
 #   GITHUB_ORG    - GitHub org/owner (e.g., vaultmesh)
-#   GITHUB_REPO   - GitHub repository name (e.g., vm-business-q)
+#   GITHUB_REPO   - GitHub repository name (e.g., vmq-oracle)
 # Optional env:
 #   GITHUB_BRANCH - Branch to allow (default: main)
 #   REGION        - AWS region (default: eu-west-1)

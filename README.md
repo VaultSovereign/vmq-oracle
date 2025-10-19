@@ -1,8 +1,8 @@
 VaultMesh × Amazon Q Business Bundle (eu-west-1)
 
-[![Docs → S3 → Q Sync](https://github.com/VaultSovereign/vm-business-q/actions/workflows/qbusiness-sync.yml/badge.svg)](../../actions/workflows/qbusiness-sync.yml)
-[![DR Monthly Parity](https://github.com/VaultSovereign/vm-business-q/actions/workflows/dr-monthly.yml/badge.svg)](../../actions/workflows/dr-monthly.yml)
-![Tag](https://img.shields.io/github/v/tag/VaultSovereign/vm-business-q?label=release)
+[![Docs → S3 → Q Sync](https://github.com/VaultSovereign/vmq-oracle/actions/workflows/qbusiness-sync.yml/badge.svg)](../../actions/workflows/qbusiness-sync.yml)
+[![DR Monthly Parity](https://github.com/VaultSovereign/vmq-oracle/actions/workflows/dr-monthly.yml/badge.svg)](../../actions/workflows/dr-monthly.yml)
+![Tag](https://img.shields.io/github/v/tag/VaultSovereign/vmq-oracle?label=release)
 
 > 🟩 **RUBEDO SSO CUTOVER COMPLETE** — October 19, 2025  
 > **Status:** PRODUCTION GREEN  
@@ -38,6 +38,7 @@ Key paths
 Notes
 - Keep datasource connector JSONs aligned with AWS docs before production.
 - All scripts default to eu-west-1; override with `REGION`.
+- After editing guardrails: run `make guardrails-verify` locally, then open a PR (Guardrail Lint must pass).
 
 ## Service SLOs & Observability
 
@@ -51,6 +52,8 @@ Notes
 - **CloudWatch dashboard:** [`VaultMesh-Sovereign`](https://console.aws.amazon.com/cloudwatch/home?region=eu-west-1#dashboards:name=VaultMesh-Sovereign)
 - **DR monthly workflow:** [`dr-monthly.yml`](../../actions/workflows/dr-monthly.yml)
 - **No-sync daily workflow:** [`no-sync-daily.yml`](../../actions/workflows/no-sync-daily.yml)
-- **Guardrails JSON:** [`02-qbusiness/guardrails/vaultmesh-guardrails.json`](02-qbusiness/guardrails/vaultmesh-guardrails.json)
+- **Guardrail drift workflow:** [`guardrail-drift.yml`](../../actions/workflows/guardrail-drift.yml)
+- **Guardrail lint:** [`guardrail-lint.yml`](../../actions/workflows/guardrail-lint.yml)
+- **Guardrails JSON:** [`02-qbusiness/guardrails/topic-controls.json`](02-qbusiness/guardrails/topic-controls.json)
 - **Knowledge bucket:** `s3://vaultmesh-knowledge-base`
 

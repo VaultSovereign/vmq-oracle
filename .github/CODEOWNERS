@@ -4,7 +4,12 @@
 /docs/**                                @VaultSovereign/sovereign-ops
 /RUNBOOK-DR.md                          @VaultSovereign/sovereign-ops
 /RUNBOOK-IR.md                          @VaultSovereign/sovereign-ops
-/02-qbusiness/guardrails/**             @VaultSovereign/sovereign-ops
 /02-qbusiness/datasources/**            @VaultSovereign/sovereign-ops
 /docs/CONNECTORS.md                      @VaultSovereign/sovereign-ops
 /docs/CONTENT-POLICY.md                  @VaultSovereign/sovereign-ops
+
+# Guardrail configurations (topic controls, chat controls)
+/02-qbusiness/guardrails/*              @VaultSovereign/security
+
+# CI/CD workflows (drift detection, sync, DR)
+/.github/workflows/*                    @VaultSovereign/ops

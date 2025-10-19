@@ -53,14 +53,15 @@ weburl web-url:
 
 # Apply guardrails from YAML (preferred) or JSON
 guardrails:
-	@which yq >/dev/null 2>&1 || { echo "yq is required (https://mikefarah.gitbook.io/yq/)"; exit 1; }
 	@[ -f .env ] && set -a && . ./.env && set +a; \
-	 yq -o=json 02-qbusiness/guardrails/topic-controls.yaml > /tmp/qb-guardrails.json; \
-	 aws qbusiness update-chat-controls-configuration \
-	   --region "$$REGION" \
-	   --application-id "$$APP_ID" \
-	   --cli-input-json file:///tmp/qb-guardrails.json; \
-	 echo "✅ Guardrails applied to $$APP_ID"
+	if [ -f 02-qbusiness/guardrails/topic-controls.yaml ]; then \
+	  which yq >/dev/null 2>&1 || { echo "yq is required (https://mikefarah.gitbook.io/yq/)"; exit 1; }; \
+	  yq -o=json 02-qbusiness/guardrails/topic-controls.yaml > /tmp/qb-guardrails.json; \
+	  aws qbusiness update-chat-controls-configuration --region "$$REGION" --application-id "$$APP_ID" --cli-input-json file:///tmp/qb-guardrails.json; \
+	else \
+	  aws qbusiness update-chat-controls-configuration --region "$$REGION" --application-id "$$APP_ID" --cli-input-json file://02-qbusiness/guardrails/topic-controls.json; \
+	fi; \
+	echo "✅ Guardrails applied to $$APP_ID"
 
 guardrails-json:
 	@[ -f .env ] && set -a && . ./.env && set +a; \
