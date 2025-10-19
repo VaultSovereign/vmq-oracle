@@ -1,0 +1,138 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Emit real-time S3 prefix metrics (size & count) for Q Business export bucket
+Parameters:
+  BucketName:
+    Type: String
+  PrefixesJson:
+    Type: String
+    Default: '["","_staging/"]'
+    Description: JSON array of prefixes, e.g. ["","_staging/","ci/"]
+Resources:
+  PrefixMetricsRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: PrefixMetricsPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource: !Sub arn:aws:s3:::${BucketName}
+              - Effect: Allow
+                Action:
+                  - cloudwatch:PutMetricData
+                Resource: '*'
+
+  PrefixMetricsFn:
+    Type: AWS::Lambda::Function
+    Properties:
+      Runtime: python3.12
+      Handler: index.handler
+      Role: !GetAtt PrefixMetricsRole.Arn
+      Timeout: 60
+      MemorySize: 256
+      Environment:
+        Variables:
+          BUCKET: !Ref BucketName
+          PREFIXES_JSON: !Ref PrefixesJson
+          NAMESPACE: VaultMesh/S3Prefixes
+      Code:
+        ZipFile: |
+          import os, json, boto3
+          from botocore.config import Config
+
+          cfg = Config(retries={'max_attempts': 5, 'mode': 'standard'})
+          s3 = boto3.client('s3', config=cfg)
+          cw = boto3.client('cloudwatch', config=cfg)
+
+          def list_sum(bucket, prefix):
+              continuation = None
+              total_bytes = 0
+              object_count = 0
+              while True:
+                  params = {
+                      'Bucket': bucket,
+                      'Prefix': prefix,
+                      'MaxKeys': 1000
+                  }
+                  if continuation:
+                      params['ContinuationToken'] = continuation
+                  resp = s3.list_objects_v2(**params)
+                  for obj in resp.get('Contents', []):
+                      total_bytes += obj.get('Size', 0)
+                      object_count += 1
+                  if not resp.get('IsTruncated'):
+                      break
+                  continuation = resp.get('NextContinuationToken')
+              return total_bytes, object_count
+
+          def put_metrics(namespace, bucket, prefix, total_bytes, object_count):
+              dimensions = [
+                  {'Name': 'Bucket', 'Value': bucket},
+                  {'Name': 'Prefix', 'Value': prefix}
+              ]
+              cw.put_metric_data(
+                  Namespace=namespace,
+                  MetricData=[
+                      {
+                          'MetricName': 'PrefixSizeBytes',
+                          'Value': float(total_bytes),
+                          'Unit': 'Bytes',
+                          'Dimensions': dimensions
+                      },
+                      {
+                          'MetricName': 'PrefixObjectCount',
+                          'Value': float(object_count),
+                          'Unit': 'Count',
+                          'Dimensions': dimensions
+                      }
+                  ]
+              )
+
+          def handler(event, context):
+              bucket = os.environ['BUCKET']
+              prefixes = json.loads(os.environ.get('PREFIXES_JSON', '[""]'))
+              namespace = os.environ.get('NAMESPACE', 'VaultMesh/S3Prefixes')
+
+              for raw_prefix in prefixes:
+                  prefix = raw_prefix.lstrip('/')
+                  total_bytes, object_count = list_sum(bucket, prefix)
+                  put_metrics(namespace, bucket, prefix, total_bytes, object_count)
+
+              return {'ok': True, 'counted': len(prefixes)}
+
+  Rule15m:
+    Type: AWS::Events::Rule
+    Properties:
+      ScheduleExpression: rate(15 minutes)
+      State: ENABLED
+      Targets:
+        - Arn: !GetAtt PrefixMetricsFn.Arn
+          Id: target
+
+  PermInvoke:
+    Type: AWS::Lambda::Permission
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref PrefixMetricsFn
+      Principal: events.amazonaws.com
+      SourceArn: !GetAtt Rule15m.Arn
+
+Outputs:
+  FunctionName:
+    Value: !Ref PrefixMetricsFn

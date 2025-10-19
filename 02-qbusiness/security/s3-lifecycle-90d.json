@@ -1,0 +1,25 @@
+{
+  "Rules": [
+    {
+      "ID": "Expire-CI-90d",
+      "Filter": { "Prefix": "ci/" },
+      "Status": "Enabled",
+      "Expiration": { "Days": 90 },
+      "NoncurrentVersionExpiration": { "NoncurrentDays": 90 }
+    },
+    {
+      "ID": "Expire-DR-90d",
+      "Filter": { "Prefix": "_staging/dr/" },
+      "Status": "Enabled",
+      "Expiration": { "Days": 90 },
+      "NoncurrentVersionExpiration": { "NoncurrentDays": 90 }
+    },
+    {
+      "ID": "Expire-Promotions-Audit-90d",
+      "Filter": { "Prefix": "audit/promotions/" },
+      "Status": "Enabled",
+      "Expiration": { "Days": 90 },
+      "NoncurrentVersionExpiration": { "NoncurrentDays": 90 }
+    }
+  ]
+}

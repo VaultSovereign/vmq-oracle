@@ -193,6 +193,44 @@
         "stacked": false,
         "period": 86400
       }
+    },
+    {
+      "type": "metric",
+      "x": 0,
+      "y": 21,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "region": "__REGION__",
+        "title": "Prefix Object Count (Root vs _staging/)",
+        "metrics": [
+          ["VaultMesh/S3Prefixes", "PrefixObjectCount", "Bucket", "vaultmesh-knowledge-base", "Prefix", "root", {"label": "Root (production)", "stat": "Average"}],
+          [".", ".", ".", ".", ".", "staging", {"label": "Staging", "stat": "Average"}]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "period": 300,
+        "yAxis": {"left": {"min": 0}}
+      }
+    },
+    {
+      "type": "metric",
+      "x": 12,
+      "y": 21,
+      "width": 12,
+      "height": 6,
+      "properties": {
+        "region": "__REGION__",
+        "title": "Prefix Size Bytes (Root vs _staging/)",
+        "metrics": [
+          ["VaultMesh/S3Prefixes", "PrefixSizeBytes", "Bucket", "vaultmesh-knowledge-base", "Prefix", "root", {"label": "Root (production)", "stat": "Average"}],
+          [".", ".", ".", ".", ".", "staging", {"label": "Staging", "stat": "Average"}]
+        ],
+        "view": "timeSeries",
+        "stacked": false,
+        "period": 300,
+        "yAxis": {"left": {"min": 0}}
+      }
     }
   ]
 }

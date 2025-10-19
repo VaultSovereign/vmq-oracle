@@ -3,7 +3,7 @@ SHELL := /usr/bin/env bash
 
 REGION ?= eu-west-1
 
-.PHONY: validate bootstrap roles app index retriever s3 sync wait-sync guardrails web weburl web-url bundle github-oidc-role pipeline-aws-native
+.PHONY: validate bootstrap roles app index retriever s3 sync wait-sync guardrails web weburl web-url bundle github-oidc-role pipeline-aws-native s3-prefix-metrics s3-lifecycle-90d
 
 bootstrap:
 	@./01-foundation/iam/roles/create-roles.sh
@@ -40,10 +40,6 @@ sync:
 wait-sync:
 	@[ -f .env ] && set -a && . ./.env && set +a; \
 	 ./02-qbusiness/datasources/wait-sync.sh
-
-guardrails:
-	@[ -f .env ] && set -a && . ./.env && set +a; \
-	 APP_ID=$${APP_ID:?}; ./02-qbusiness/guardrails/apply-guardrails.sh $$APP_ID
 
 web:
 	@[ -f .env ] && set -a && . ./.env && set +a; \
@@ -205,3 +201,24 @@ dashboard-deploy:
 	 aws cloudwatch put-dashboard --region "$$REGION" --dashboard-name "$$DNAME" --dashboard-body file://$$TMP; \
 	 rm -f $$TMP; \
 	 echo "✅ Deployed dashboard '$$DNAME' in $$REGION"
+
+s3-prefix-metrics:
+	@[ -f .env ] && set -a && . ./.env && set +a; \
+	 REGION=$${REGION:-eu-west-1}; \
+	 PREF=$${S3_PREFIXES_JSON:-'["","_staging/"]'}; \
+	 aws cloudformation deploy \
+	   --region "$$REGION" \
+	   --stack-name qbusiness-s3-prefix-metrics \
+	   --template-file 02-qbusiness/monitoring/s3-prefix-metrics.yaml \
+	   --capabilities CAPABILITY_NAMED_IAM \
+	   --parameter-overrides BucketName="$$BUCKET_NAME" PrefixesJson="$$PREF"; \
+	 aws cloudformation describe-stacks \
+	   --region "$$REGION" --stack-name qbusiness-s3-prefix-metrics \
+	   --query 'Stacks[0].Outputs' --output table
+
+s3-lifecycle-90d:
+	@[ -f .env ] && set -a && . ./.env && set +a; \
+	 aws s3api put-bucket-lifecycle-configuration \
+	   --bucket "$$BUCKET_NAME" \
+	   --lifecycle-configuration file://02-qbusiness/security/s3-lifecycle-90d.json; \
+	 echo "✅ Applied 90-day lifecycle to $$BUCKET_NAME for ci/, _staging/dr/, audit/promotions/"
